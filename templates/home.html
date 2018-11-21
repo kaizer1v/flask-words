@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Home</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='node_modules/bootstrap/dist/css/bootstrap.min.css')}}">
+</head>
+<body>
+
+<h1>Words</h1>
+
+<label for="txt_word">Enter a word: <input type="text" name="txt_word" /></label>
+<button>Search</button>
+
+<script type="text/html" class="word_card">
+  <% function titlecase(txt) { return txt.replace(/^(\w)/g, t => t.toUpperCase()) } %>
+  <div class="card" style="width: 18rem;">
+    <div class="card-body">
+      <h5 class="card-title"><%= titlecase(word['id']) %></h5>
+      <% var lex_entries = word['lexicalEntries']; %>
+      <% for(let i = 0; i < lex_entries.length; i++) { %>
+        <h6 class="card-subtitle mb-2 text-muted"><%= lex_entries[i]['lexicalCategory'] %></h6>
+        <% var entries = lex_entries[i]['entries'] %>
+        <% for(let i = 0; i < entries.length; i++) { %>
+          <% var senses = entries[i]['senses'] %>
+          <p class="card-text"><%= senses[0]['definitions'][0] %></p>
+        <% } %>
+      <% } %>
+    </div>
+  </div>
+</script>
+<div class="word_card"></div>
+
+<script type="text/javascript" src="{{ url_for('static', filename='node_modules/jquery/dist/jquery.min.js')}}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='node_modules/bootstrap/dist/js/bootstrap.bundle.min.js')}}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='node_modules/underscore/underscore-min.js')}}"></script>
+<script type="text/javascript">
+(function(document) {
+  let source = document.querySelector('script.word_card')
+  let target = document.querySelector('div.word_card')
+  let submit = document.querySelector('button')
+  let word_input = document.querySelector('input[type=text]')
+  let c = _.template(source.innerHTML)
+
+  submit.onclick = handler
+  word_input.onkeydown = handler
+
+  function handler(evt) {
+    let events = ['keydown', 'click']
+    let txt_word = word_input.value.toLowerCase().replace(/[\W0-9]/g, '')
+    if(events.indexOf(evt.type) !== -1) {
+      if(evt.type === 'keydown') { if(evt.key === 'Enter') display(txt_word) }
+      else { display(txt_word) }
+    }
+  }
+
+  function display(word) {
+    fetch(`/get_word/${word}`)
+      .then(resp => resp.json())
+      .then(function(json) {
+        target.innerHTML = c({ 'word': json['results'][0]})
+      })
+      .catch(function(err) {
+        console.error('Network connection error')
+        target.innerHTML = c({ 'word': { 'id': 'Network connection error' } })
+      })
+  }
+
+})(document)
+
+</script>
+</body>
+</html>
